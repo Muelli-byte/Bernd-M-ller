@@ -10,5 +10,16 @@
         ]
       }
     ]
+  },
+  "extraKnownMarketplaces": {
+    "bernd-m-ller": {
+      "source": {
+        "source": "github",
+        "repo": "Muelli-byte/Bernd-M-ller"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "limit-balken@bernd-m-ller": true
   }
 }
