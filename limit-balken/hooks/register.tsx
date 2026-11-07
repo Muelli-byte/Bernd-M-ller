@@ -4,6 +4,10 @@ import type { Register } from 'claude-code'
 import type { Limit } from '../types'
 
 const limits = atom({ plugin: 'limit-balken', key: 'limits' } as const, [] as Limit[])
+const gemessen = atom({ plugin: 'limit-balken', key: 'gemessen' } as const, false)
+
+const PANE = 'limit-balken'
+const TITEL = 'Limits'
 
 const NAMEN: Record<string, string> = { five_hour: 'Stundenlimit (5 h)', seven_day: 'Wochenlimit' }
 
@@ -40,9 +44,14 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     const res = await next(e)
     try {
+      await $.command.register({ name: 'limits', description: 'Stunden- und Wochenlimit im Seitenfenster zeigen' })
+    } catch {}
+    void $.ui.open({ id: PANE, title: TITEL })
+    try {
       const u = await $.session.usage()
       const r = relevante(u.rateLimits)
       await update($, limits, () => r)
+      await update($, gemessen, () => true)
       $.ui.status(statusText(r))
     } catch {}
     return res
@@ -52,9 +61,47 @@ export const register: Register = on => {
     if (e.changed.includes('rateLimits')) {
       const r = relevante(e.rateLimits)
       await update($, limits, () => r)
+      await update($, gemessen, () => true)
       $.ui.status(statusText(r))
     }
     return next(e)
+  })
+
+  on('command.run', { command: 'limits' }, async $ => {
+    await $.ui.open({ id: PANE, title: TITEL })
+    return { text: 'Seitenfenster „Limits“ geöffnet.' }
+  })
+
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    const { Box, Text } = $.ui.resolve(e)
+    const l = await read($, limits)
+    const g = await read($, gemessen)
+
+    if (l.length === 0) {
+      return (
+        <Box flexDirection="column">
+          <Text dimColor>
+            {g
+              ? 'Diese Sitzung meldet keine Limits (nur mit Claude-Abo verfügbar).'
+              : 'Noch keine Messung – erscheint nach der nächsten Antwort.'}
+          </Text>
+        </Box>
+      )
+    }
+
+    return (
+      <Box flexDirection="column">
+        {l.map(x => (
+          <Box key={x.kind} flexDirection="column" marginBottom={1}>
+            <Text bold>{NAMEN[x.kind] ?? x.kind}</Text>
+            <Text color={farbe(x.percentUsed)}>{balken(x.percentUsed)}</Text>
+            <Text>
+              {x.percentUsed.toFixed(0)} % verbraucht <Text dimColor>{reset(x.resetsAt)}</Text>
+            </Text>
+          </Box>
+        ))}
+      </Box>
+    )
   })
 
   on('ui.render', { component: 'AbovePrompt' }, async ($, e, next) => {
