@@ -1,0 +1,1 @@
+{ "name": "limit-balken", "version": "0.1.0", "description": "Balken mit Stundenlimit (5 h) und Wochenlimit", "types": "./types/index.d.ts" }

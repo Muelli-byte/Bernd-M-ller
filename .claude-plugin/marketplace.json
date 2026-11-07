@@ -1,0 +1,5 @@
+{
+  "name": "bernd-m-ller",
+  "owner": { "name": "Muelli-byte" },
+  "plugins": [{ "name": "limit-balken", "source": "./limit-balken" }]
+}
